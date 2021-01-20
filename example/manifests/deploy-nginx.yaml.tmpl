@@ -1,0 +1,62 @@
+{{- $nginxPort := default "8080" .nginx_port }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ default "nginx" .nginx_app_name }}
+  namespace: {{ if .nginx_namespace }}{{ .nginx_namespace }}{{ else }}web{{ end }}
+  labels:
+    app: {{ default "nginx" .nginx_app_name }}
+    component: web
+    role: front
+spec:
+  replicas: {{ default "2" .nginx_replicas }}
+  selector:
+    matchLabels:
+      app: nginx
+      name: {{ default "nginx" .nginx_app_name }}
+      component: web
+      role: front
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: nginx
+        name: {{ default "nginx" .nginx_app_name }}
+        component: web
+        role: front
+      annotations:
+        checksum/config: {{ default "unknown" .sha256_configmap }}
+    spec:
+      {{- if .nginx_host_network }}
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      {{- end }}
+      imagePullSecrets:
+        - name: {{ if .nginx_pull_secret }}{{ .nginx_pull_secret }}{{ end }}
+      serviceAccountName: {{ default "nginx" .nginx_app_name }}
+      containers:
+        - name: nginx
+          image: {{ coalesce .nginx_image "nginx:stable" }}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: {{ $nginxPort }}
+              protocol: TCP
+          resources:
+            limits:
+              cpu: {{ default "200m" .nginx_cpu_limit }}
+              memory: {{ default "128Mi" .nginx_memory_limit }}
+            requests:
+              cpu: {{ default "100m" .nginx_cpu_request }}
+              memory: {{ default "32Mi" .nginx_memory_request }}
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: {{ default "nginx" .nginx_app_name }}-config
+      - name: certs-volume
+        emptyDir:
+          medium: Memory
+          sizeLimit: "5M"
+
+# vim: syntax=yaml

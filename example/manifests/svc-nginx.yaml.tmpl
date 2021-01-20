@@ -1,0 +1,17 @@
+# vim: syntax=yaml
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{ default "nginx" .nginx_app_name }}
+  namespace: {{ if .nginx_namespace }}{{ .nginx_namespace }}{{ else }}web{{ end }}
+  labels:
+    app: {{ default "nginx" .nginx_app_name }}
+    component: web
+    role: front
+spec:
+  selector:
+    app: nginx
+    component: nginx
+  ports:
+  - protocol: TCP
+    port: {{ default "8080" .nginx_webserver_port }}

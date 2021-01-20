@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ default "nginx" .nginx_app_name }}-config
+  namespace: {{ if .nginx_namespace }}{{ .nginx_namespace }}{{ else }}web{{ end }}
+  labels:
+    app: nginx
+data:
+  nginx-config.yaml: |-
+    # DUMMY
+
+# vim: syntax=yaml
